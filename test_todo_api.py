@@ -1,16 +1,7 @@
 import requests
+import uuid
 
-# http://127.0.0.1:3002
 ENDPOINT = 'https://todo.pixegami.io/'
-
-#response = requests.get(ENDPOINT)
-#print(response)
-
-#data = response.json()
-#print(data)
-
-#status_code = response.status_code
-#print(status_code)
 
 def test_can_call_endpoint():
     response = requests.get(ENDPOINT)
@@ -57,17 +48,32 @@ def test_can_update_task():
     assert get_task_data["content"] == new_payload["content"]
     assert get_task_data["is_done"] == new_payload["is_done"]
 
-def test_Bdika():
-    print("")
-    print("")
-    print("")print("")
-    print("")
-    print("")print("")
-    print("")
-    print("")
+def test_can_list_tasks():
+    n=3
+    payload = new_task_payload()
+    for i in range (n):
+        create_task_response = create_task(payload)
+        assert create_task_response.status_code == 200
 
+    user_id = payload["user_id"]
+    get_list_response = get_list_tasks(user_id)
+    assert get_list_response.status_code == 200
 
+    print(get_list_response.json())
+    tasks = get_list_response.json()["tasks"]
+    assert len(tasks) == n
 
+def test_can_delete_task():
+    payload = new_task_payload()
+    create_task_response = create_task(payload)
+    assert create_task_response.status_code == 200
+    task_id = create_task_response.json()["task"]["task_id"]
+
+    delete_task_response = delete_tasks(task_id)
+    assert  delete_task_response.status_code == 200
+
+    get_task_response = get_task(task_id)
+    assert get_task_response.status_code == 404
 
 
 def create_task(payload):
@@ -76,13 +82,22 @@ def create_task(payload):
 def get_task(task_id):
     return requests.get(ENDPOINT + f"/get-task/{task_id}")
 
+def get_list_tasks(user_id):
+    return requests.get(ENDPOINT + f"/list-tasks/{user_id}")
+
+def delete_tasks(task_id):
+    return requests.delete(ENDPOINT + f"/delete-task/{task_id}")
+
 def update_task(payload):
     return requests.put(ENDPOINT + "/update-task", json=payload)
 
 def new_task_payload():
+    user_id = f"test_user_{uuid.uuid4().hex}" # create random user id
+    content = f"test_content_{uuid.uuid4().hex}"
+
+    print(f"Creating task for user {user_id} with content {content}")
     return {
-        "content": "my test content",
-        "user_id": "test_user",
-        "task_id": "test_task_id",
+        "content": content,
+        "user_id": user_id,
         "is_done": False
     }
